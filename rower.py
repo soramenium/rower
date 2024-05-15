@@ -1,7 +1,13 @@
 import os
 import random
-import keyboard
+import time
 import pygame
+import RPi.GPIO as GPIO
+
+# Set up GPIO mode
+GPIO.setmode(GPIO.BCM)
+switch_pin = 17
+GPIO.setup(switch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def play_random_sound(folder_path):
     sound_files = [file for file in os.listdir(folder_path) if file.endswith(('.mp3', '.wav', '.ogg'))]
@@ -11,6 +17,26 @@ def play_random_sound(folder_path):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         continue
+
+
+try:
+    while True:
+        # Check if the switch is on
+        if GPIO.input(switch_pin) == GPIO.LOW:
+            # Execute your function
+            play_random_sound()
+            # Add any additional delay to prevent rapid checking
+            # This is optional and depends on your specific requirements
+            time.sleep(0.1)
+finally:
+    # Clean up GPIO
+    GPIO.cleanup()
+
+
+
+
+
+
 
 def main():
     folder_path = "./sounds"  # Change this to your sound folder path
