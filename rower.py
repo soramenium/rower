@@ -17,6 +17,7 @@ pygame.mixer.init()
 WINDOW_SIZE = 5  # seconds
 FREQUENCY_THRESHOLD = 1  # Hz, frequency threshold to trigger sound
 SOUNDS_FOLDER = 'sounds'  # Folder where sound files are located
+DEBOUNCE_TIME = 200  # milliseconds
 
 signal_times = deque(maxlen=1000)
 
@@ -39,7 +40,7 @@ def signal_received(channel):
     signal_times.append(current_time)
 
 # Add event detection on the signal pin
-GPIO.add_event_detect(SIGNAL_PIN, GPIO.RISING, callback=signal_received)
+    GPIO.add_event_detect(SIGNAL_PIN, GPIO.FALLING, callback=signal_received, bouncetime=DEBOUNCE_TIME)
 
 try:
     while True:
