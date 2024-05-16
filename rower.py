@@ -24,7 +24,7 @@ try:
         # Check if the switch is on
         if GPIO.input(switch_pin) == GPIO.LOW:
             # Execute your function
-            play_random_sound()
+            play_random_sound("sounds/")
             # Add any additional delay to prevent rapid checking
             # This is optional and depends on your specific requirements
             time.sleep(0.1)
