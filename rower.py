@@ -8,7 +8,7 @@ from collections import deque
 # Initialize GPIO
 GPIO.setmode(GPIO.BCM)
 SIGNAL_PIN = 17
-GPIO.setup(SIGNAL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(SIGNAL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 # Initialize Pygame mixer
 pygame.mixer.init()
@@ -39,7 +39,7 @@ def signal_received(channel):
     signal_times.append(current_time)
 
 # Add event detection on the signal pin
-GPIO.add_event_detect(SIGNAL_PIN, GPIO.FALLING, callback=signal_received)
+GPIO.add_event_detect(SIGNAL_PIN, GPIO.RISING, callback=signal_received)
 
 try:
     while True:
