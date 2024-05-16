@@ -1,55 +1,71 @@
+import RPi.GPIO as GPIO
+import pygame
+import time
 import os
 import random
-import time
-import pygame
-import RPi.GPIO as GPIO
+from collections import deque
 
-# Set up GPIO mode
+# Initialize GPIO
 GPIO.setmode(GPIO.BCM)
-switch_pin = 17
-GPIO.setup(switch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+SIGNAL_PIN = 17
+GPIO.setup(SIGNAL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-def play_random_sound(folder_path):
-    sound_files = [file for file in os.listdir(folder_path) if file.endswith(('.mp3', '.wav', '.ogg'))]
-    random_sound = os.path.join(folder_path, random.choice(sound_files))
-    pygame.mixer.init()
-    pygame.mixer.music.load(random_sound)
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        continue
+# Initialize Pygame mixer
+pygame.mixer.init()
 
+# Parameters
+WINDOW_SIZE = 5  # seconds
+FREQUENCY_THRESHOLD = 1  # Hz, frequency threshold to trigger sound
+SOUNDS_FOLDER = 'sounds'  # Folder where sound files are located
+
+signal_times = deque(maxlen=1000)
+
+def get_random_sound():
+    """ Get a random sound file from the sounds folder """
+    sound_files = [f for f in os.listdir(SOUNDS_FOLDER) if f.endswith('.wav')]
+    if not sound_files:
+        raise FileNotFoundError("No .wav files found in the sounds folder")
+    return os.path.join(SOUNDS_FOLDER, random.choice(sound_files))
+
+def play_sound():
+    """ Play a random sound """
+    sound_file = get_random_sound()
+    sound = pygame.mixer.Sound(sound_file)
+    sound.play()
+
+def signal_received(channel):
+    """ Callback function when signal is received """
+    current_time = time.time()
+    signal_times.append(current_time)
+
+# Add event detection on the signal pin
+GPIO.add_event_detect(SIGNAL_PIN, GPIO.FALLING, callback=signal_received)
 
 try:
     while True:
-        # Check if the switch is on
-        if GPIO.input(switch_pin) == GPIO.LOW:
-            # Execute your function
-            play_random_sound("sounds/")
-            # Add any additional delay to prevent rapid checking
-            # This is optional and depends on your specific requirements
-            time.sleep(0.1)
+        current_time = time.time()
+
+        # Remove signals that are outside the window
+        while signal_times and signal_times[0] < current_time - WINDOW_SIZE:
+            signal_times.popleft()
+
+        # Calculate frequency
+        if len(signal_times) > 1:
+            duration = signal_times[-1] - signal_times[0]
+            frequency = len(signal_times) / duration if duration > 0 else 0
+        else:
+            frequency = 0
+
+        # Play sound if frequency is above threshold
+        if frequency >= FREQUENCY_THRESHOLD:
+            play_sound()
+
+        # Sleep a bit before next check
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("Exiting program")
+
 finally:
-    # Clean up GPIO
     GPIO.cleanup()
-
-
-
-
-
-
-
-def main():
-    folder_path = "./sounds"  # Change this to your sound folder path
-    # print("Press 'p' to play a random sound. Press 'q' to quit.")
-    # while True:
-    #     key_pressed = keyboard.read_event(suppress=True)
-    #     if key_pressed.name == "p":
-    #         play_random_sound(folder_path)
-    #     elif key_pressed.name == "q":
-    #         print("Exiting...")
-    #         break
-    for i in 10:
-        play_random_sound(folder_path)
-
-if __name__ == "__main__":
-    main()
+    pygame.quit()
